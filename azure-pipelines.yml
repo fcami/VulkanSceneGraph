@@ -2,24 +2,45 @@
 trigger:
 - master
 
-pool:
-  vmImage: ubuntu-latest
+resources:
+  containers:
 
-steps:
-- script: |
-    sudo apt-get install -y libvulkan-dev
-  displayName: "apt-get"
+  - container: u20
+    image: ubuntu:20.04
 
-- script: |
-    mkdir build
-    cd build
-    cmake ..
-  displayName: 'cmake'
+  - container: u22
+    image: ubuntu:22.04
 
-- script: |
-    CORE_COUNT=$(grep processor /proc/cpuinfo | wc -l)
-    echo "Will build with ${CORE_COUNT} cores."
-    cd build
-    make -j $CORE_COUNT
-  displayName: 'build'
+jobs:
+- job: RunInContainer
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  strategy:
+    matrix:
+      ubuntu20:
+        containerResource: u20
+      ubuntu22:
+        containerResource: u22
+
+  container: $[ variables['containerResource'] ]
+
+
+  steps:
+  - script: |
+      sudo apt-get install -y libvulkan-dev
+    displayName: "apt-get"
+
+  - script: |
+      mkdir build
+      cd build
+      cmake ..
+    displayName: 'cmake'
+
+  - script: |
+      CORE_COUNT=$(grep processor /proc/cpuinfo | wc -l)
+      echo "Will build with ${CORE_COUNT} cores."
+      cd build
+      make -j $CORE_COUNT
+    displayName: 'build'
 
